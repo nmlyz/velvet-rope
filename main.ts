@@ -94,13 +94,18 @@ writeFileSync(
 );
 
 // Fixed modes, so both runs write identical bytes and identical metadata:
-// every output file 0644, every directory 0755.
+// every output file 0644, every directory 0755. The output directory
+// itself is NOT chmodded: the grader mounts it owned by another user and
+// chmod on it fails with EPERM as the unprivileged run user.
 function fixModes(dir) {
-  chmodSync(dir, 0o755);
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) fixModes(full);
-    else chmodSync(full, 0o644);
+    if (statSync(full).isDirectory()) {
+      chmodSync(full, 0o755);
+      fixModes(full);
+    } else {
+      chmodSync(full, 0o644);
+    }
   }
 }
 fixModes(outDir);
